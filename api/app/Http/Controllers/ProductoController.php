@@ -174,4 +174,51 @@ class ProductoController extends Controller
         }
         return response()->json($response, $response['status']); //retornamos la respuesta en formato json con el estado de la respuesta
     }
+
+    public function uploadImage(Request $request)
+    {
+        $isValid = \Validator::make(
+            $request->all(),
+            ['file0' => 'required|image|mimes:jpg,jpeg,png,gif,svg']
+        );
+        if (!$isValid->fails()) {
+            $image = $request->file('file0');
+            $filename = \Str::uuid() . '.' . $image->getClientOriginalExtension();
+            \Storage::disk('products')->put($filename, \File::get($image));
+            $response = array(
+                "status" => 201,
+                "message" => "Imagen guardada correctamente",
+                "filename" => $filename,
+            );
+        } else {
+            $response = array(
+                "status" => 406,
+                "message" => "Error: no se encontro la imagen",
+                "errors" => $isValid->errors()
+            );
+        }
+        return response()->json($response, $response['status']);
+    }
+
+    public function getImage($filename)
+    {
+        if (isset($filename)) {
+            $exist = \Storage::disk('products')->exists($filename);
+            if ($exist) {
+                $file = \Storage::disk('products')->get($filename);
+                return new Response($file, 200);
+            } else {
+                $response = array(
+                    "status" => 404,
+                    "message" => "No Existe la imagen"
+                );
+            }
+        } else {
+            $response = array(
+                "status" => 406,
+                "message" => "No se definio el nombre de la imagen"
+            );
+        }
+        return response()->json($response);
+    }
 }
