@@ -15,7 +15,7 @@ class UserController extends Controller
         $users = User::all();
         $response = [
             'status' => 200,
-            'users' => $users
+            'data' => $users
         ];
         return response()->json($response, $response['status']);
     }
@@ -51,6 +51,7 @@ class UserController extends Controller
                 'phone' => 'required',
                 'lastName' => 'required',
                 'address' => 'required',
+                'image' => 'required|image|mimes:jpg,jpeg,png,gif,svg'
             ];
 
             $isValid = \Validator::make($data, $rules);
@@ -63,6 +64,7 @@ class UserController extends Controller
                 $user->phone = $data['phone'];
                 $user->lastName = $data['lastName'];
                 $user->address = $data['address'];
+                $user->image = $data['image'];
                 $user->save();
 
                 $response = [
@@ -99,7 +101,8 @@ class UserController extends Controller
                 'phone'=>'required',
                 'rol'=>'required',
                 'lastName' => 'required',
-                'address' => 'required'              
+                'address' => 'required',
+                'image'=>'required|image|mimes:jpg,jpeg,png,gif,svg'              
             ];
             $isValid=\validator($data,$rules);
             if(!$isValid->fails()){
@@ -114,6 +117,7 @@ class UserController extends Controller
                 $user->phone=$data['phone'];
                 $user->lastName = $data['lastName'];
                 $user->address = $data['address'];
+                $user->image=$data['image'];
                 $user->save();
                 $response=array(
                     'status'=>201,
@@ -235,4 +239,57 @@ class UserController extends Controller
         }
         return response()->json($response);
     }
+
+    public function updateImage(Request $request, string $filename)
+    {
+        $isValid = \Validator::make(
+            $request->all(),
+            ['file0' => 'required|image|mimes:jpg,jpeg,png,gif,svg']
+        );
+        if (!$isValid->fails()) {
+            $image = $request->file('file0');
+            $filename = \Str::uuid() . '.' . $image->getClientOriginalExtension();
+            \Storage::disk('users')->put($filename, \File::get($image));
+            $response = array(
+                "status" => 201,
+                "message" => "Imagen guardada correctamente",
+                "filename" => $filename,
+            );
+        } else {
+            $response = array(
+                "status" => 406,
+                "message" => "Error: no se encontro la imagen",
+                "errors" => $isValid->errors()
+            );
+        }
+        return response()->json($response, $response['status']);
+    }
+
+    public function destroyImage($filename)
+    {
+        if (isset($filename)) {
+            $exist = \Storage::disk('users')->exists($filename);
+            if ($exist) {
+                \Storage::disk('users')->delete($filename);
+                $response = array(
+                    "status" => 201,
+                    "message" => "Imagen eliminada correctamente"
+                );
+            } else {
+                $response = array(
+                    "status" => 404,
+                    "message" => "No Existe la imagen"
+                );
+            }
+        } else {
+            $response = array(
+                "status" => 406,
+                "message" => "No se definio el nombre de la imagen"
+            );
+        }
+        return response()->json($response);
+       
+    }
+
+
 }

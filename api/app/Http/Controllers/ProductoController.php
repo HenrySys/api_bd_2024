@@ -221,4 +221,55 @@ class ProductoController extends Controller
         }
         return response()->json($response);
     }
+
+    public function updateImage(Request $request, string $filename)
+    {
+        $isValid = \Validator::make(
+            $request->all(),
+            ['file0' => 'required|image|mimes:jpg,jpeg,png,gif,svg']
+        );
+        if (!$isValid->fails()) {
+            $image = $request->file('file0');
+            $filename = \Str::uuid() . '.' . $image->getClientOriginalExtension();
+            \Storage::disk('products')->put($filename, \File::get($image));
+            $response = array(
+                "status" => 201,
+                "message" => "Imagen guardada correctamente",
+                "filename" => $filename,
+            );
+        } else {
+            $response = array(
+                "status" => 406,
+                "message" => "Error: no se encontro la imagen",
+                "errors" => $isValid->errors()
+            );
+        }
+        return response()->json($response, $response['status']);
+    }
+
+    public function destroyImage($filename)
+    {
+        if (isset($filename)) {
+            $exist = \Storage::disk('products')->exists($filename);
+            if ($exist) {
+                \Storage::disk('products')->delete($filename);
+                $response = array(
+                    "status" => 201,
+                    "message" => "Imagen eliminada correctamente"
+                );
+            } else {
+                $response = array(
+                    "status" => 404,
+                    "message" => "No Existe la imagen"
+                );
+            }
+        } else {
+            $response = array(
+                "status" => 406,
+                "message" => "No se definio el nombre de la imagen"
+            );
+        }
+        return response()->json($response);
+       
+    }
 }
